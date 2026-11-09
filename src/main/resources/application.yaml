@@ -78,7 +78,7 @@ spring:
               predicates:
                 - Path=/api/v1/items/**
               filters:
-                - StripPrefix=3
+                - StripPrefix=2
 
             - id: order-docs
               uri: lb://marketplace-order
@@ -92,7 +92,7 @@ spring:
               predicates:
                 - Path=/api/v1/orders/**
               filters:
-                - StripPrefix=3
+                - StripPrefix=2
 
             - id: springdoc-rewrite
               uri: no://op
@@ -115,6 +115,8 @@ eureka:
     instance-id: ${spring.application.name}:${server.port}
 
 springdoc:
+  api-docs:
+    server-url: http://localhost:8080
   swagger-ui:
     urls:
       - name: Auth Service
@@ -127,6 +129,4 @@ springdoc:
         url: /api/v1/orders/v3/api-docs
     disable-swagger-default-url: true
     config-url: /v3/api-docs/swagger-config
-  api-docs:
-    enabled: true
   use-management-port: false
