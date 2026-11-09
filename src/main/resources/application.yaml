@@ -5,32 +5,101 @@ spring:
     gateway:
       server:
         webflux:
-          discovery:
-            locator:
-              enabled: true
+          default-filters:
+            - AddRequestHeader=X-Forwarded-Host, localhost:8080
+            - AddRequestHeader=X-Forwarded-Proto, http
           routes:
-            - id: auth-service
+            - id: auth-oauth2-callback
               uri: lb://marketplace-auth
               predicates:
-                - Path=/api/v1/auth/**, /oauth2/**
+                - Path=/login/oauth2/**
+              filters:
+                - PreserveHostHeader
+
+            - id: auth-oauth2-authorization
+              uri: lb://marketplace-auth
+              predicates:
+                - Path=/oauth2/**
+              filters:
+                - PreserveHostHeader
+
+            - id: auth-login
+              uri: lb://marketplace-auth
+              predicates:
+                - Path=/login,/login/**,/logout
+              filters:
+                - PreserveHostHeader
+
+            - id: oauth-success
+              uri: lb://marketplace-auth
+              predicates:
+                - Path=/oauth-success
+              filters:
+                - PreserveHostHeader
+
+            - id: auth-docs
+              uri: lb://marketplace-auth
+              predicates:
+                - Path=/api/v1/auth/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+
+            - id: auth-service-api
+              uri: lb://marketplace-auth
+              predicates:
+                - Path=/api/v1/auth/**
+              filters:
+                - PreserveHostHeader
+                - StripPrefix=3
+
+            - id: wallet-docs
+              uri: lb://marketplace-wallet
+              predicates:
+                - Path=/api/v1/wallets/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+
             - id: wallet-service
               uri: lb://marketplace-wallet
               predicates:
                 - Path=/api/v1/wallets/**
               filters:
                 - StripPrefix=3
+
+            - id: catalog-docs
+              uri: lb://marketplace-catalog
+              predicates:
+                - Path=/api/v1/items/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+
             - id: catalog-service
               uri: lb://marketplace-catalog
               predicates:
                 - Path=/api/v1/items/**
               filters:
                 - StripPrefix=3
+
+            - id: order-docs
+              uri: lb://marketplace-order
+              predicates:
+                - Path=/api/v1/orders/v3/api-docs
+              filters:
+                - SetPath=/v3/api-docs
+
             - id: order-service
               uri: lb://marketplace-order
               predicates:
                 - Path=/api/v1/orders/**
               filters:
                 - StripPrefix=3
+
+            - id: springdoc-rewrite
+              uri: no://op
+              predicates:
+                - Path=/v3/api-docs/**
+              filters:
+                - RewritePath=/v3/api-docs/(?<path>.*), /$\{path}
 
 server:
   port: 8080
@@ -44,14 +113,20 @@ eureka:
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
+
 springdoc:
   swagger-ui:
     urls:
       - name: Auth Service
-        url: http://localhost:8081/v3/api-docs
+        url: /api/v1/auth/v3/api-docs
       - name: Wallet Service
-        url: http://localhost:6767/v3/api-docs
+        url: /api/v1/wallets/v3/api-docs
       - name: Catalog Service
-        url: http://localhost:8083/v3/api-docs
+        url: /api/v1/items/v3/api-docs
       - name: Order Service
-        url: http://localhost:8084/v3/api-docs
+        url: /api/v1/orders/v3/api-docs
+    disable-swagger-default-url: true
+    config-url: /v3/api-docs/swagger-config
+  api-docs:
+    enabled: true
+  use-management-port: false
